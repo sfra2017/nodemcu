@@ -1,0 +1,442 @@
+<head>
+	<meta charset="UTF-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=Edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Nodemcu Logger</title>
+	<link rel="stylesheet" type="text/css" href="/css/jquery-ui.css">
+	<link rel="stylesheet" type="text/css" href="/css/layout-default.css">
+	<link rel="stylesheet" type="text/css" href="/css/bootstrap.css">
+	<link rel="stylesheet" type="text/css" href="/css/font-awesome.css">
+	<link rel="stylesheet" type="text/css" href="/css/personal.css">
+	<link rel="stylesheet" type="text/css" href="/css/bootstrap-theme.css">
+	<script src="/javascript/jquery/jquery.min.js"></script>
+    <script src="/javascript/bootstrap/bootstrap.js"></script>
+ 
+
+	<script src="/Chart.js/dist/Chart.bundle.js"></script>
+    <script src="/Chart.js/samples/utils.js"></script>
+    <script src="/chartjs-plugin-zoom/node_modules/hammerjs/hammer.min.js"></script>
+    <script src="/chartjs-plugin-zoom/chartjs-plugin-zoom.js"></script>
+     
+	
+	
+	<link href="https://fonts.googleapis.com/css?family=Roboto" rel="stylesheet">
+	<link href="https://fonts.googleapis.com/css?family=Orbitron" rel="stylesheet"> 
+ </head>
+<body>
+
+ <nav class="navbar navbar-expand-lg navbar-light bg-light">
+   <a class="navbar-brand">Nodemcu Logger</a>
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+   <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
+                  <div class="navbar-nav">
+                    <a class="nav-item nav-link active" href="./">Home</span></a>
+                    <a class="nav-item nav-link" href="/users">Charts</a>
+                    <a class="nav-item nav-link" href="#">Configuration</a>
+                    <a class="nav-item nav-link disabled" href="#">Disabled</a>
+                  </div>
+     </div>
+  </nav>
+
+
+
+
+  <div class="container scroll">
+    <br>
+	 <br>
+	 <div class="row">
+        <div class="col-md-6">
+		   <div class="panel-group">
+              <div class=" panel panel-primary">
+                 <div class="panel-heading text-center"><h4>Current Temperature</h4></div>
+				 <div class="panel-body text-center"><h4 id="temp"><%= temperature %>°C</h4></div>
+			  </div>
+		   </div>  	
+         </div> 
+		 <div class="col-md-6">
+		   <div class="panel-group">
+              <div class=" panel panel-primary">
+                 <div class="panel-heading text-center"><h4>Current Humidity</h4></div>
+				 <div class="panel-body text-center"><h4 id="hum"><%= humidity %>%RH</h4></div>
+			  </div>
+		   </div>  	
+         </div> 
+     </div>	
+   
+
+	  
+     <div class="chart-holder"> 
+       <div class="dropdown pull-top "> 
+        <button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+            Options
+            <span class="caret"/>
+         </button>
+        <ul class="dropdown-menu" id="dropdownMenu" aria-labelledby="dropdownMenu1">
+           <li><a></a></li>
+           <li><button class="dropdown-item" data-toggle="modal" data-target= "#mailModal" id="generateCsv"> Generate CSV from Historic </button></li>
+           <li role="separator" class="divider"></li>
+           <li><button  class="dropdown-item" data-toggle="modal" data-target="#modal"> New live chart</button></li>
+        </ul>
+        <div class="modal fade" id="modal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+          <div class="modal-dialog" role="document">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h4 class="modal-title" id="exampleModalLabel">Are you sure you want to empty the live chart? No worries, data won't be lost. </h4>
+               </div>
+              <div class="modal-footer">
+                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                 <button type="button" id="delete_Alldata" class="btn btn-primary" data-dismiss="modal">Delete Data</button>
+               </div>
+             </div>
+           </div>
+         </div>
+         <div class="modal fade" id="mailModal" tabindex="-1" role="dialog" aria-labelledby="ModalLabel" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                   <button type="button" class="close" data-dismiss="modal">&times;</button>  
+                </div>
+                <form>
+                  <div class="modal-body">
+                        <div class="form-group">
+                              <label>Insert your email:</label>
+                              <input class="form-control"  autocomplete="true" id="usr_email" placeholder="mario.rossi@gmail.com"/>
+                          </div>
+                        <div class="form-group">
+                            <label>Insert the Csv file name:</label>
+                            <input autocomplete="true" class="form-control" id="filename" placeholder="MyCsvfile"/>
+                          </div>
+
+                  </div>
+                 </form>
+
+                <div class="modal-footer">
+                   <button type="button" id="send_email" class="btn btn-primary" data-dismiss="modal">Send Email</button>
+                 </div>
+               </div>
+             </div>
+           </div>
+        </div>
+       <canvas id="myChart"></canvas>
+    </div>
+    <br>
+     
+    
+     <div class="chart-holder">   
+
+         <div class="btn-group d-flex" role="group">
+           <div class="btn btn-default w-100" id="last_24">Last 24 hours</div>
+           <div class="btn btn-default w-100" id="last_week">Last 7 days</div>
+           <div class="btn btn-default w-100" id="last_month">Last month</div>
+           <div class="btn btn-default w-100" id="all">All</div>
+         </div>   
+        <canvas id="history_chart"></canvas> 
+       </div>
+
+ </div>
+
+ <script>
+
+var ctx=$("#myChart");
+var history_chart=$("#history_chart");
+
+var temp= <%- JSON.stringify(temperature) %>;
+var hum= <%- JSON.stringify(humidity) %>;
+
+var labelsArray= [<%- labels%>];
+var tempArray = [<%- tempArray %>];
+var humArray = [<%- humArray %>];
+var data = "<%- data %>;"
+
+var humArray_history=[<%- humArray_history%>];
+var tempArray_history=[<%- tempArray_history%>];
+var labelsArray_history=[<%- labels_history %>];
+console.log(labelsArray_history);
+
+
+
+$("#all").addClass("active");
+$('#last_24').on('click', function(){ show("last_24"); $(this).addClass("active"); $("div.active:not(#last_24)").removeClass("active")});
+$('#last_week').on('click', function(){ show("last_week"); $(this).addClass("active");  $("div.active:not(#last_week)").removeClass("active")});
+$('#last_month').on('click', function(){ show("last_month"); $(this).addClass("active"); $("div.active:not(#last_month)").removeClass("active")});
+$('#all').on('click', function(){ show("all"); $(this).addClass("active"); $("div.active:not(#all)").removeClass("active")});
+
+$("#delete_lastdata").on('click', function(){  myChart.data.datasets.forEach((dataset) => {dataset.data.pop();});
+   myChart.update()
+ })
+
+$("#delete_Alldata").on('click', function(){  
+    myChart.data.datasets.forEach((dataset)=>{dataset.data=[];});
+    myChart.update();
+
+ })
+
+
+$('#send_email').on('click', function(){
+   var userdata={
+        username: $("#usr_email").val(),
+         filename: $("#filename").val()
+   }
+     $.post("/generateCsv", userdata);
+
+     //console.log("generated");
+ });
+
+
+
+function show(period){
+       switch(period){
+             case "last_24": 
+                  show_period(24);
+                  console.log("LAST 24")
+              break;
+             case "last_week": 
+                  show_period(168);
+                  console.log("LAST WEEK")
+             
+              break;
+             case "last_month": 
+                  show_period(4);
+                  console.log("LAST MONTH")
+              break;
+             case "all": 
+                  show_period()
+                  console.log("ALL")
+              break;
+             default: 
+                  show_period(24);
+                  console.log("LAST 24")
+              break;
+
+       }
+
+ }
+function upload_history(temp,hum,labels){ 
+   console.log(temp);
+   
+
+
+   myChart2.data.datasets[0].data=hum;
+   myChart2.data.datasets[1].data=temp;
+   myChart2.data.labels=labels;
+
+   myChart2.update();
+   
+
+
+   console.log("upload called");
+ }
+
+function show_period(misurazioni){
+    
+    
+     var last_temp=tempArray_history.slice(Math.max(tempArray_history.length - misurazioni, 1));
+     var last_humi=humArray_history.slice(Math.max(humArray_history.length - misurazioni, 1));
+     var last_labels=labelsArray_history.slice(Math.max(labelsArray_history.length - misurazioni, 1));
+
+
+     upload_history(last_temp, last_humi, last_labels);
+ 
+   }
+
+       
+ 
+var chartdata = { 
+     labels: labelsArray,
+     datasets: [
+       {
+           label: "Humidity",
+           fill: false,
+           lineTension: 0.4,
+           backgroundColor: "rgba(7,192,198,0.1)",
+           borderColor: "rgba(54,127,169,1)",
+           borderCapStyle: 'butt',
+           borderDash: [],
+           borderDashOffset: 0.0,
+           borderJoinStyle: 'bevel',
+           pointBorderColor: "rgba(75,192,192,1)",
+           pointBackgroundColor: "#fff",
+           pointBorderWidth: 1,
+           pointHoverRadius: 5,
+           pointHoverBackgroundColor: "rgba(75,192,192,1)",
+           pointHoverBorderColor: "rgba(220,220,220,1)",
+           pointHoverBorderWidth: 2,
+           pointRadius: 2,
+           pointHitRadius: 10,
+           data: humArray,
+           spanGaps: false,
+       },
+       {
+           label: "Temperature",
+           fill: false,
+           lineTension: 0.4,
+           backgroundColor: "rgba(7,192,19,0.1)",
+           borderColor: "rgba(255,12,16,1)",
+           borderCapStyle: 'butt',
+           borderDash: [],
+           borderDashOffset: 0.0,
+           borderJoinStyle: 'bevel',
+           pointBorderColor: "rgba(75,192,192,1)",
+           pointBackgroundColor: "#fff",
+           pointBorderWidth: 1,
+           pointHoverRadius: 5,
+           pointHoverBackgroundColor: "rgba(75,192,192,1)",
+           pointHoverBorderColor: "rgba(220,220,220,1)",
+           pointHoverBorderWidth: 2,
+           pointRadius: 2,
+           pointHitRadius: 10,
+           data: tempArray,
+           spanGaps: false,
+
+
+       }
+      ]
+    };
+var historydata = { 
+     labels: labelsArray_history,
+     datasets: [
+       {
+           label: "Humidity",
+           fill: false,
+           lineTension: 0.4,
+           backgroundColor: "rgba(7,192,198,0.1)",
+           borderColor: "rgba(54,127,169,1)",
+           borderCapStyle: 'butt',
+           borderDash: [],
+           borderDashOffset: 0.0,
+           borderJoinStyle: 'bevel',
+           pointBorderColor: "rgba(75,192,192,1)",
+           pointBackgroundColor: "#fff",
+           pointBorderWidth: 1,
+           pointHoverRadius: 5,
+           pointHoverBackgroundColor: "rgba(75,192,192,1)",
+           pointHoverBorderColor: "rgba(220,220,220,1)",
+           pointHoverBorderWidth: 2,
+           pointRadius: 2,
+           pointHitRadius: 10,
+           data: humArray_history,
+           spanGaps: false,
+       },
+       {
+           label: "Temperature",
+           fill: false,
+           lineTension: 0.3,
+           backgroundColor: "rgba(7,192,19,0.1)",
+           borderColor: "rgba(255,12,16,1)",
+           borderCapStyle: 'butt',
+           borderDash: [],
+           borderDashOffset: 0.0,
+           borderJoinStyle: 'bevel',
+           pointBorderColor: "rgba(75,192,192,1)",
+           pointBackgroundColor: "#fff",
+           pointBorderWidth: 1,
+           pointHoverRadius: 5,
+           pointHoverBackgroundColor: "rgba(75,192,192,1)",
+           pointHoverBorderColor: "rgba(220,220,220,1)",
+           pointHoverBorderWidth: 2,
+           pointRadius: 2,
+           pointHitRadius: 10,
+           data: tempArray_history,
+           spanGaps: false,
+
+
+       }
+      ]
+    };
+var myChart = new Chart(ctx, {  
+   type: 'line',
+     data: chartdata,
+     options: {
+       responsive:true,
+       title: { 
+           text:data,
+           display:true,
+           fontSize:14
+        },
+       scales: {  
+          yAxes: [{
+               ticks: {
+                   beginAtZero:true
+               }
+           }],
+
+          xAxes: [{
+               ticks: {
+                   beginAtZero:false,
+                   maxTicksLimit:15,
+                   autoSkip: true
+               }
+           }]
+         },
+       legend:{
+
+
+          position:"right",
+        },
+       pan: { 
+       
+         enabled: false,
+         mode: 'x'
+        },
+       zoom: { 
+   
+         enabled: false,
+         mode: 'x',
+        }
+     }
+   });
+
+var myChart2 = new Chart(history_chart, {  
+   type: 'line',
+     data: historydata,
+     options: {
+       responsive:true,
+       title: { 
+           text: "Historic Data",
+           display:true,
+           fontSize:14
+        },
+       scales: {  
+          yAxes: [{
+               ticks: {
+                   beginAtZero:true
+               }
+           }],
+
+          xAxes: [{
+               ticks: {
+                   beginAtZero:false,
+                   maxTicksLimit:15,
+                   autoSkip: true
+               }
+           }]
+         },
+       legend:{
+
+
+          position:"right",
+        },
+       pan: { 
+       
+         enabled: false,
+         mode: 'x'
+        },
+       zoom: { 
+   
+         enabled: false,
+         mode: 'x',
+        }
+     }
+   });
+
+
+
+ </script>
+
+
+
+
+  
+</body>
